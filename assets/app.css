@@ -542,3 +542,6 @@ body.landing .floating-badge { transition: opacity .35s ease; }
 .admin-row .msg-actions button:disabled,
 .product-admin button:disabled,
 .btn:disabled { opacity: .55; cursor: not-allowed; }
+
+/* Sections with no saved content are removed from the layout entirely */
+.is-empty { display: none !important; }
