@@ -39,7 +39,7 @@
   /* ----------------------------------------------------------------------
      2) DEFAULT CONTENT (fallback if API unreachable; mirrors D1 seed)
   ---------------------------------------------------------------------- */
-  window.DOXTOX_DEFAULT_CONTENT = {
+  window.DOXTOX_DEMO_CONTENT = {
     brand: { name: 'DoxTox', logo_icon: 'fas fa-bolt' },
     nav: { products: 'Products', features: 'Features', about: 'About', contact: 'Contact' },
     hero: {
@@ -112,7 +112,7 @@
       ]
     }
   };
-  window.DOXTOX_DEFAULT_PRODUCTS = [
+  window.DOXTOX_DEMO_PRODUCTS = [
     { id: 'zudo', title: 'Zudo AI', description: 'Enterprise‑grade AI assistant that automates workflows, generates insights, and integrates with your data stack.', icon: 'fas fa-brain', tags: ['Python', 'TensorFlow', 'REST'], link: '#', link_label: 'Learn more', featured: false, external: false, sort_order: 10 },
     { id: 'ems', title: 'EMS', description: 'Complete multi‑store management system with unified inventory, centralized order tracking, and real‑time analytics across all locations.', icon: 'fas fa-store-alt', tags: ['React', 'Node.js', 'Multi‑tenant'], link: 'ems.html', link_label: 'Explore EMS', featured: true, external: false, sort_order: 20 },
     { id: 'infl', title: 'InfluencerOS', description: 'Partner & influencer management platform — allocate project targets, track acquired users, calculate commissions and run balance‑safe partner payouts.', icon: 'fas fa-bullhorn', tags: ['Partners', 'Projects', 'Payouts'], link: 'influenceros/', link_label: 'Open InfluencerOS', featured: false, external: false, sort_order: 30 }
@@ -173,13 +173,15 @@
      3) LANDING PAGE  (only runs on index.html — guarded by body class)
   ====================================================================== */
   const Landing = (function () {
-    let content = window.DOXTOX_DEFAULT_CONTENT;
-    let products = window.DOXTOX_DEFAULT_PRODUCTS.slice();
+    let content = {};   // starts empty; filled from saved data (no built-in flash)
+    let products = [];  // same — nothing renders until the saved list loads
 
     function releaseLoading() {
       if (typeof window.__doxRelease === 'function') window.__doxRelease();
       document.body.classList.remove('content-loading');
     }
+    // Hide an element entirely when it has no content (avoids empty boxes).
+    function toggleEmpty(el, countOrHas) { if (el) el.classList.toggle('is-empty', !(countOrHas && (countOrHas.length ? countOrHas.length : countOrHas))); }
 
     function renderProducts() {
       const grid = $('[data-products-grid]');
@@ -219,10 +221,10 @@
       wrap.innerHTML = content.stats.map((s) => '<div class="stat"><h3>' + esc(s.value) + '</h3><p>' + esc(s.label) + '</p></div>').join('');
     }
     function renderBadges() {
-      const anchor = $('[data-badges]');
-      if (!anchor || !content.badges) return;
-      const visual = anchor.parentElement;
+      const visual = $('[data-badges]');
+      if (!visual) return;
       $$('.floating-badge', visual).forEach((b) => b.remove());
+      if (!content.badges) return;
       content.badges.forEach((b, i) => {
         const el = document.createElement('div');
         el.className = 'floating-badge floating-badge--' + (i + 1);
@@ -282,8 +284,8 @@
       setText($('[data-about-label]'), c.about && c.about.label);
       setText($('[data-about-title1]'), c.about && c.about.title_1);
       setText($('[data-about-title2]'), c.about && c.about.title_2_highlight);
-      if (c.about && Array.isArray(c.about.paragraphs)) $('[data-about-paragraphs]').innerHTML = c.about.paragraphs.map((p) => '<p>' + esc(p) + '</p>').join('');
-      if (c.about && Array.isArray(c.about.checks)) $('[data-about-checks]').innerHTML = c.about.checks.map((ch) => '<li><i class="fas fa-check-circle"></i> ' + esc(ch) + '</li>').join('');
+      const aboutParas = $('[data-about-paragraphs]'); if (aboutParas) aboutParas.innerHTML = (c.about && Array.isArray(c.about.paragraphs)) ? c.about.paragraphs.map((p) => '<p>' + esc(p) + '</p>').join('') : '';
+      const aboutChecks = $('[data-about-checks]'); if (aboutChecks) aboutChecks.innerHTML = (c.about && Array.isArray(c.about.checks)) ? c.about.checks.map((ch) => '<li><i class="fas fa-check-circle"></i> ' + esc(ch) + '</li>').join('') : '';
       setText($('[data-about-cta-label]'), c.about && c.about.cta);
       const ai = $('[data-about-cta-icon]'); if (ai && c.about && c.about.cta_icon) ai.className = c.about.cta_icon;
       const ct = c.contact || {};
@@ -299,17 +301,37 @@
       setText($('[data-year]'), String(new Date().getFullYear()));
       renderStats(); renderBadges(); renderCodeBlock(); renderFeatures();
       renderSocials(); renderFooterLinks(); renderProducts();
+
+      // Collapse sections that have no saved data (no empty boxes / "—")
+      toggleEmpty($('[data-stats]'), (c.stats || []).length);
+      toggleEmpty($('[data-code-block]'), (c.code_block || []).length);
+      toggleEmpty($('[data-products-grid]'), products.filter((p) => p && p.active !== false).length);
+      toggleEmpty($('[data-features-grid]'), (c.features || []).length);
+      toggleEmpty($('[data-social-links]'), (c.contact && c.contact.socials || []).length);
+      toggleEmpty($('[data-footer-links]'), (c.footer && c.footer.links || []).length);
+      toggleEmpty($('[data-badges]'), (c.badges || []).length);
+      toggleEmpty($('[data-hero-primary-link]'), !!(c.hero && (c.hero.primary_btn || c.hero.primary_icon)));
+      toggleEmpty($('[data-hero-secondary-label]').closest('a'), !!(c.hero && c.hero.secondary_btn));
+      toggleEmpty($('[data-contact-email]').closest('.contact-item'), !!(ct.email));
+      toggleEmpty($('[data-contact-phone]').closest('.contact-item'), !!(ct.phone));
+      toggleEmpty($('[data-contact-address]').closest('.contact-item'), !!(ct.address));
+      toggleEmpty($('[data-about-cta]'), !!(c.about && c.about.cta));
+      toggleEmpty($('[data-about-paragraphs]'), (c.about && c.about.paragraphs || []).length);
+      toggleEmpty($('[data-about-checks]'), (c.about && c.about.checks || []).length);
+
       releaseLoading(); // reveal everything only after saved content is in place
     }
     async function load() {
+      // Use ONLY the saved content. Empty fields stay empty (no demo flash).
+      // Demo data is only shown as a last resort if the API is unreachable.
       try {
         const data = await window.doxtox.api.get('/content');
-        if (data && data.content) content = deepMerge(window.DOXTOX_DEFAULT_CONTENT, data.content);
-      } catch (e) { console.warn('[DoxTox] content fallback:', e.message); }
+        content = (data && data.content) ? data.content : {};
+      } catch (e) { console.warn('[DoxTox] content unreachable, using demo fallback:', e.message); content = window.DOXTOX_DEMO_CONTENT; }
       try {
         const data = await window.doxtox.api.get('/products');
-        if (data && data.products && data.products.length) products = data.products;
-      } catch (e) { console.warn('[DoxTox] products fallback:', e.message); }
+        products = (data && data.products) ? data.products : [];
+      } catch (e) { console.warn('[DoxTox] products unreachable:', e.message); products = []; }
       renderContent();
     }
     function initNav() {
@@ -680,6 +702,49 @@
       });
     }
 
+    /* ---------- demo content (fills all forms with sample data) ---------- */
+    function clone(o) { return JSON.parse(JSON.stringify(o)); }
+    function applyDemoContent() {
+      content = clone(window.DOXTOX_DEMO_CONTENT);
+      hydrateForms();
+    }
+    async function ensureDemoProducts(force) {
+      if (!force && products.length) return { added: 0 };
+      let added = 0;
+      for (const p of window.DOXTOX_DEMO_PRODUCTS) {
+        // Skip a demo product if one with the same title already exists
+        if (!force && products.some((x) => (x.title || '').toLowerCase() === p.title.toLowerCase())) continue;
+        const { id, ...data } = p; // let the backend assign a new id
+        try { const res = await window.doxtox.api.post('/admin/products', data); if (res.product) added++; }
+        catch (e) { /* continue with the rest */ }
+      }
+      return { added };
+    }
+    async function loadDemo(productsOnly) {
+      const msg = productsOnly
+        ? 'Add the sample products (Zudo AI, EMS, InfluencerOS)?'
+        : 'Load demo content? This fills every editor field (brand, hero, stats, features, about, contact, footer) with sample data and adds the sample products. Your saved content is not replaced until you click Save changes on each tab.';
+      if (!confirm(msg)) return;
+      const btn = productsOnly ? $('#demoProductsBtn') : $('#demoBtn');
+      if (btn) { btn.disabled = true; btn.dataset.orig = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading…'; }
+      try {
+        if (!productsOnly) applyDemoContent();
+        const { added } = await ensureDemoProducts(!productsOnly);
+        await loadProducts(); renderProducts();
+        if (!productsOnly) {
+          refreshOverview();
+          toast('Demo loaded — review each tab and click “Save changes” to publish. ' + (added ? added + ' sample product(s) added.' : ''));
+        } else {
+          toast(added ? added + ' demo product(s) added.' : 'Demo products already exist.');
+        }
+      } catch (e) { toast('Demo load failed: ' + e.message, 'err'); }
+      finally { if (btn) { btn.disabled = false; btn.innerHTML = btn.dataset.orig; } }
+    }
+    function initDemo() {
+      const d = $('#demoBtn'); if (d) d.addEventListener('click', () => loadDemo(false));
+      const dp = $('#demoProductsBtn'); if (dp) dp.addEventListener('click', () => loadDemo(true));
+    }
+
     /* ---------- overview / tabs ---------- */
     async function refreshOverview() {
       try {
@@ -732,8 +797,8 @@
       });
       try {
         const res = await window.doxtox.api.get('/admin/content');
-        content = res && res.content ? deepMerge(window.DOXTOX_DEFAULT_CONTENT, res.content) : window.DOXTOX_DEFAULT_CONTENT;
-      } catch (e) { toast('Could not load content: ' + e.message, 'err'); content = window.DOXTOX_DEFAULT_CONTENT; }
+        content = (res && res.content) ? res.content : {};
+      } catch (e) { toast('Could not load content: ' + e.message, 'err'); content = {}; }
       LIST_DEFS = buildListDefs(); hydrateForms();
       ['formHero', 'formFeatures', 'formAbout', 'formContact', 'formFooter'].forEach((id) => {
         const f = document.getElementById(id);
@@ -747,7 +812,7 @@
       $('#msgFilter').addEventListener('change', () => loadMessages().catch((e) => toast(e.message, 'err')));
       $('#msgReload').addEventListener('click', () => loadMessages().catch((e) => toast(e.message, 'err')));
       $('#overviewReload').addEventListener('click', refreshOverview);
-      initAdmins();
+      initAdmins(); initDemo();
       initPasswordForm(); initTabs(); refreshOverview();
     }
 
