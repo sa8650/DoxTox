@@ -42,8 +42,13 @@ CREATE TABLE IF NOT EXISTS admin_users (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   email         TEXT NOT NULL UNIQUE COLLATE NOCASE,
   password_hash TEXT NOT NULL,
+  active        INTEGER NOT NULL DEFAULT 1,
+  last_login    TEXT,
   created_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
+-- NOTE: databases created before the admin-management feature get the
+-- `active` and `last_login` columns added automatically by the API on the
+-- first request (no manual SQL needed).
 
 CREATE TABLE IF NOT EXISTS sessions (
   token         TEXT PRIMARY KEY,
