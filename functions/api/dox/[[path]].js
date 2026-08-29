@@ -282,3 +282,4 @@ function normalizeProduct(b) {
     sort_order: Number.isFinite(+b.sort_order) ? +b.sort_order : 0
   };
 }
+
