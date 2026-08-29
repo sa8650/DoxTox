@@ -1,0 +1,10 @@
+name = "doxtox"
+compatibility_date = "2026-08-05"
+pages_build_output_dir = "."
+
+# D1 database binding. No database_id is committed here — bind the database
+# named "doxtox" to variable DB in Cloudflare Pages → Settings → Functions →
+# D1 database bindings (or set it locally with `wrangler pages dev --d1=DB`).
+[[d1_databases]]
+binding = "DB"
+database_name = "doxtox"

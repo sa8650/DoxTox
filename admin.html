@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Admin — DoxTox</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%236c5ce7'/%3E%3Cpath d='M55 12 28 55h16l-5 33 33-45H54z' fill='%23fff'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="assets/app.css" />
+  </head>
+  <body class="admin">
+
+    <!-- ======================= LOGIN / SETUP ======================= -->
+    <div class="login-wrap" id="authWrap">
+
+      <!-- Login -->
+      <div class="login-card" id="view-login">
+        <div class="logo"><i class="fas fa-bolt"></i> DoxTox</div>
+        <p class="sub">Admin dashboard — sign in</p>
+        <div class="form-error" id="loginError"></div>
+        <form id="loginForm">
+          <div class="field">
+            <label for="loginEmail">Email</label>
+            <input type="email" id="loginEmail" autocomplete="username" required placeholder="you@company.com" />
+          </div>
+          <div class="field">
+            <label for="loginPassword">Password</label>
+            <input type="password" id="loginPassword" autocomplete="current-password" required placeholder="••••••••" />
+          </div>
+          <button type="submit" class="btn btn-primary" id="loginBtn" style="width: 100%"><i class="fas fa-sign-in-alt"></i> Sign in</button>
+        </form>
+        <p style="text-align:center;margin-top:22px;font-size:.82rem">
+          <a href="/"><i class="fas fa-arrow-left"></i> Back to website</a>
+          &nbsp;·&nbsp;
+          <a href="#setup" id="goSetup"><i class="fas fa-key"></i> First-time setup</a>
+        </p>
+      </div>
+
+      <!-- Setup -->
+      <div class="login-card hidden" id="view-setup">
+        <div class="logo"><i class="fas fa-bolt"></i> DoxTox</div>
+        <p class="sub">Create your admin login &nbsp;•&nbsp; one-time setup</p>
+        <div class="form-error" id="setupError"></div>
+        <div class="form-ok" id="setupOk"><i class="fas fa-circle-check"></i> Admin login created. Redirecting to sign in…</div>
+        <form id="setupForm">
+          <div class="field">
+            <label for="setupKey">Setup secret</label>
+            <input type="password" id="setupKey" required placeholder="The SETUP_SECRET from Pages settings" autocomplete="off" />
+            <div class="hint">The <strong>SETUP_SECRET</strong> set in Pages → Settings → Variables and Secrets.</div>
+          </div>
+          <div class="field">
+            <label for="setupEmail">Admin email</label>
+            <input type="email" id="setupEmail" required placeholder="you@company.com" autocomplete="email" />
+          </div>
+          <div class="field">
+            <label for="setupPassword">Admin password</label>
+            <input type="password" id="setupPassword" required minlength="10" placeholder="At least 10 characters" autocomplete="new-password" />
+          </div>
+          <button type="submit" class="btn btn-primary" id="setupBtn" style="width:100%"><i class="fas fa-user-shield"></i> Create / reset admin</button>
+        </form>
+        <p style="text-align:center;margin-top:22px;font-size:.82rem">
+          <a href="#login" id="backLogin"><i class="fas fa-arrow-left"></i> Back to sign in</a>
+          &nbsp;·&nbsp;
+          <a href="/"><i class="fas fa-house"></i> Website</a>
+        </p>
+      </div>
+
+    </div>
+
+    <!-- ======================= DASHBOARD ======================= -->
+    <div class="layout hidden" id="view-dash">
+      <aside class="sidebar">
+        <div class="brand"><i class="fas fa-bolt"></i> DoxTox</div>
+        <nav id="sideNav">
+          <button data-tab="overview" class="active"><i class="fas fa-gauge-high"></i> Overview</button>
+          <button data-tab="hero"><i class="fas fa-bolt"></i> Hero &amp; Stats</button>
+          <button data-tab="products"><i class="fas fa-box"></i> Products</button>
+          <button data-tab="features"><i class="fas fa-star"></i> Features</button>
+          <button data-tab="about"><i class="fas fa-users"></i> About</button>
+          <button data-tab="contact"><i class="fas fa-envelope"></i> Contact &amp; Socials</button>
+          <button data-tab="footer"><i class="fas fa-shoe-prints"></i> Footer</button>
+          <button data-tab="messages"><i class="fas fa-inbox"></i> Messages <span class="badge-count hidden" id="msgBadge">0</span></button>
+          <button data-tab="account"><i class="fas fa-key"></i> Account</button>
+        </nav>
+        <div class="sidebar-footer">
+          <div class="user" id="userEmail"></div>
+          <a class="btn btn-ghost btn-sm" href="/" target="_blank" rel="noopener"><i class="fas fa-up-right-from-square"></i> View site</a>
+          <button class="btn btn-danger btn-sm" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Sign out</button>
+        </div>
+      </aside>
+
+      <main class="main">
+        <!-- OVERVIEW -->
+        <section class="tab-pane active" id="tab-overview">
+          <div class="page-head">
+            <div><h1>Overview</h1><p>Your site at a glance.</p></div>
+            <button class="btn btn-primary btn-sm" id="overviewReload"><i class="fas fa-rotate"></i> Refresh</button>
+          </div>
+          <div class="stat-cards">
+            <div class="stat-card"><div class="ic"><i class="fas fa-inbox"></i></div><div><div class="num" id="statMessages">–</div><div class="lbl">New messages</div></div></div>
+            <div class="stat-card"><div class="ic"><i class="fas fa-box"></i></div><div><div class="num" id="statProducts">–</div><div class="lbl">Active products</div></div></div>
+            <div class="stat-card"><div class="ic"><i class="fas fa-clock"></i></div><div><div class="num" id="statUpdated" style="font-size:1rem">–</div><div class="lbl">Content last updated</div></div></div>
+          </div>
+          <div class="card">
+            <h2><i class="fas fa-rocket"></i> Quick start</h2>
+            <ul style="padding-left:20px;color:var(--text-secondary);font-size:.92rem;line-height:2">
+              <li>Use the sidebar to edit any section of the landing page.</li>
+              <li>Click <strong>Save changes</strong> — the public site updates instantly.</li>
+              <li><strong>Messages</strong> holds contact-form submissions.</li>
+              <li><strong>Products</strong> manages Zudo AI, EMS, InfluencerOS — add, edit, reorder, hide.</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- HERO -->
+        <section class="tab-pane" id="tab-hero">
+          <div class="page-head"><div><h1>Hero &amp; Stats</h1><p>The first thing visitors see.</p></div></div>
+          <form id="formHero">
+            <div class="card">
+              <h2><i class="fas fa-bolt"></i> Hero content</h2>
+              <div class="form-grid">
+                <div class="field full"><label>Section label</label><input type="text" data-path="hero.label" /></div>
+                <div class="field"><label>Title line 1</label><input type="text" data-path="hero.title_1" /></div>
+                <div class="field"><label>Title line 2 (highlighted)</label><input type="text" data-path="hero.title_2_highlight" /></div>
+                <div class="field full"><label>Subtitle</label><textarea data-path="hero.subtitle"></textarea></div>
+                <div class="field"><label>Primary button text</label><input type="text" data-path="hero.primary_btn" /></div>
+                <div class="field"><label>Primary button icon</label><input type="text" data-path="hero.primary_icon" placeholder="fas fa-rocket" /></div>
+                <div class="field"><label>Secondary button text</label><input type="text" data-path="hero.secondary_btn" /></div>
+                <div class="field"><label>Secondary button icon</label><input type="text" data-path="hero.secondary_icon" placeholder="fas fa-arrow-right" /></div>
+              </div>
+            </div>
+            <div class="card">
+              <h2><i class="fas fa-chart-simple"></i> Stats</h2>
+              <div class="editor-list" data-list="stats"></div>
+              <button type="button" class="btn btn-sm btn-ghost add-row-btn" data-add="stats"><i class="fas fa-plus"></i> Add stat</button>
+            </div>
+            <div class="card">
+              <h2><i class="fas fa-tags"></i> Floating badges</h2>
+              <div class="editor-list" data-list="badges"></div>
+              <button type="button" class="btn btn-sm btn-ghost add-row-btn" data-add="badges"><i class="fas fa-plus"></i> Add badge</button>
+            </div>
+            <div style="display:flex;justify-content:flex-end;position:sticky;bottom:16px">
+              <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save"></i> Save changes</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- PRODUCTS -->
+        <section class="tab-pane" id="tab-products">
+          <div class="page-head">
+            <div><h1>Products</h1><p>Cards shown in the Products section.</p></div>
+            <button class="btn btn-primary" id="addProductBtn"><i class="fas fa-plus"></i> New product</button>
+          </div>
+          <div id="productList"></div>
+        </section>
+
+        <!-- FEATURES -->
+        <section class="tab-pane" id="tab-features">
+          <div class="page-head"><div><h1>Features &amp; Section headers</h1><p>The "Why DoxTox" grid and section titles.</p></div></div>
+          <form id="formFeatures">
+            <div class="card">
+              <h2><i class="fas fa-heading"></i> Products section header</h2>
+              <div class="form-grid">
+                <div class="field full"><label>Label</label><input type="text" data-path="products_section.label" /></div>
+                <div class="field full"><label>Title (wrap words in **double asterisks** to highlight)</label><input type="text" data-path="products_section.title" /></div>
+                <div class="field full"><label>Subtitle</label><textarea data-path="products_section.subtitle"></textarea></div>
+              </div>
+            </div>
+            <div class="card">
+              <h2><i class="fas fa-heading"></i> Features section header</h2>
+              <div class="form-grid">
+                <div class="field full"><label>Label</label><input type="text" data-path="features_section.label" /></div>
+                <div class="field full"><label>Title (** to highlight)</label><input type="text" data-path="features_section.title" /></div>
+              </div>
+            </div>
+            <div class="card">
+              <h2><i class="fas fa-star"></i> Feature items</h2>
+              <div class="editor-list" data-list="features"></div>
+              <button type="button" class="btn btn-sm btn-ghost add-row-btn" data-add="features"><i class="fas fa-plus"></i> Add feature</button>
+            </div>
+            <div style="display:flex;justify-content:flex-end;position:sticky;bottom:16px">
+              <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save"></i> Save changes</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- ABOUT -->
+        <section class="tab-pane" id="tab-about">
+          <div class="page-head"><div><h1>About</h1><p>The about section text and checklist.</p></div></div>
+          <form id="formAbout">
+            <div class="card">
+              <h2><i class="fas fa-users"></i> About content</h2>
+              <div class="form-grid">
+                <div class="field full"><label>Section label</label><input type="text" data-path="about.label" /></div>
+                <div class="field"><label>Title line 1</label><input type="text" data-path="about.title_1" /></div>
+                <div class="field"><label>Title line 2 (highlighted)</label><input type="text" data-path="about.title_2_highlight" /></div>
+                <div class="field full"><label>Paragraphs (one per line)</label><textarea data-path="about.paragraphs_text" rows="4"></textarea></div>
+                <div class="field"><label>Call-to-action button text</label><input type="text" data-path="about.cta" /></div>
+                <div class="field"><label>CTA icon</label><input type="text" data-path="about.cta_icon" /></div>
+              </div>
+            </div>
+            <div class="card">
+              <h2><i class="fas fa-circle-check"></i> Checklist items</h2>
+              <div class="editor-list" data-list="about.checks"></div>
+              <button type="button" class="btn btn-sm btn-ghost add-row-btn" data-add="about.checks"><i class="fas fa-plus"></i> Add item</button>
+            </div>
+            <div style="display:flex;justify-content:flex-end;position:sticky;bottom:16px">
+              <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save"></i> Save changes</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- CONTACT -->
+        <section class="tab-pane" id="tab-contact">
+          <div class="page-head"><div><h1>Contact &amp; Socials</h1><p>Contact section details and social links.</p></div></div>
+          <form id="formContact">
+            <div class="card">
+              <h2><i class="fas fa-envelope"></i> Contact section</h2>
+              <div class="form-grid">
+                <div class="field full"><label>Section label</label><input type="text" data-path="contact.label" /></div>
+                <div class="field full"><label>Section title (** to highlight)</label><input type="text" data-path="contact.title" /></div>
+                <div class="field"><label>Info box title</label><input type="text" data-path="contact.info_title" /></div>
+                <div class="field"><label>Email</label><input type="email" data-path="contact.email" /></div>
+                <div class="field full"><label>Info box text</label><textarea data-path="contact.info_text"></textarea></div>
+                <div class="field"><label>Phone</label><input type="text" data-path="contact.phone" /></div>
+                <div class="field"><label>Address</label><input type="text" data-path="contact.address" /></div>
+              </div>
+            </div>
+            <div class="card">
+              <h2><i class="fas fa-share-nodes"></i> Social links</h2>
+              <div class="editor-list" data-list="contact.socials"></div>
+              <button type="button" class="btn btn-sm btn-ghost add-row-btn" data-add="contact.socials"><i class="fas fa-plus"></i> Add social link</button>
+            </div>
+            <div style="display:flex;justify-content:flex-end;position:sticky;bottom:16px">
+              <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save"></i> Save changes</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- FOOTER -->
+        <section class="tab-pane" id="tab-footer">
+          <div class="page-head"><div><h1>Footer &amp; Brand</h1><p>Brand name, tagline and footer links.</p></div></div>
+          <form id="formFooter">
+            <div class="card">
+              <h2><i class="fas fa-copyright"></i> Brand &amp; footer</h2>
+              <div class="form-grid">
+                <div class="field"><label>Brand name</label><input type="text" data-path="brand.name" /></div>
+                <div class="field"><label>Logo icon</label><input type="text" data-path="brand.logo_icon" /></div>
+                <div class="field full"><label>Footer tagline</label><input type="text" data-path="footer.tagline" /></div>
+                <div class="field"><label>Nav — Products</label><input type="text" data-path="nav.products" /></div>
+                <div class="field"><label>Nav — Features</label><input type="text" data-path="nav.features" /></div>
+                <div class="field"><label>Nav — About</label><input type="text" data-path="nav.about" /></div>
+                <div class="field"><label>Nav — Contact</label><input type="text" data-path="nav.contact" /></div>
+              </div>
+            </div>
+            <div class="card">
+              <h2><i class="fas fa-link"></i> Footer links</h2>
+              <div class="editor-list" data-list="footer.links"></div>
+              <button type="button" class="btn btn-sm btn-ghost add-row-btn" data-add="footer.links"><i class="fas fa-plus"></i> Add link</button>
+            </div>
+            <div style="display:flex;justify-content:flex-end;position:sticky;bottom:16px">
+              <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save"></i> Save changes</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- MESSAGES -->
+        <section class="tab-pane" id="tab-messages">
+          <div class="page-head">
+            <div><h1>Messages</h1><p>Submissions from the contact form.</p></div>
+            <div>
+              <select id="msgFilter" class="btn btn-sm" style="padding:8px 14px;cursor:pointer">
+                <option value="new">New</option>
+                <option value="read">Read</option>
+                <option value="archived">Archived</option>
+                <option value="all">All</option>
+              </select>
+              <button class="btn btn-sm btn-ghost" id="msgReload"><i class="fas fa-rotate"></i></button>
+            </div>
+          </div>
+          <div class="msg-list" id="msgList"></div>
+        </section>
+
+        <!-- ACCOUNT -->
+        <section class="tab-pane" id="tab-account">
+          <div class="page-head"><div><h1>Account</h1><p>Change your admin password.</p></div></div>
+          <div class="card" style="max-width:560px">
+            <h2><i class="fas fa-key"></i> Change password</h2>
+            <form id="formPassword">
+              <div class="field"><label for="curPw">Current password</label><input type="password" id="curPw" autocomplete="current-password" required /></div>
+              <div class="field"><label for="newPw">New password</label><input type="password" id="newPw" autocomplete="new-password" required minlength="10" /><div class="hint">At least 10 characters.</div></div>
+              <div class="field"><label for="newPw2">Confirm new password</label><input type="password" id="newPw2" autocomplete="new-password" required minlength="10" /></div>
+              <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Update password</button>
+              <p class="form-status" id="pwStatus" role="status" aria-live="polite" style="margin-top:14px"></p>
+            </form>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast-area" id="toastArea"></div>
+
+    <script src="assets/app.js"></script>
+  </body>
+</html>

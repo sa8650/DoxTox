@@ -1,0 +1,5 @@
+# Cloudflare Pages redirects.
+# Legacy EMS links (?verify=... / ?page=...) are handled in JS by assets/app.js.
+# If you host EMS / InfluencerOS separately, point their paths here, e.g.:
+# /ems.html          https://ems.yourdomain.com/        302
+# /influenceros/*    https://influenceros.yourdomain.com/:splat   302

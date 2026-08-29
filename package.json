@@ -1,0 +1,15 @@
+{
+  "name": "doxtox",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "DoxTox Technologies Ltd. — company landing page with custom-auth admin dashboard, on Cloudflare Pages, Pages Functions and D1.",
+  "scripts": {
+    "dev": "wrangler pages dev . --compatibility-date=2026-08-05 --d1=DB --ip 0.0.0.0",
+    "deploy": "wrangler pages deploy . --project-name=doxtox",
+    "check": "wrangler pages functions build --compatibility-date=2026-08-05"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
