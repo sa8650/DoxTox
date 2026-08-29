@@ -16,9 +16,11 @@
      GET/PUT/DELETE      admin/messages
      POST                admin/password
      GET                 admin/stats
+     GET/POST/PUT/DELETE admin/admins      (manage admin users)
    ========================================================================== */
 const COOKIE = 'doxtox_session';
 const SESSION_DAYS = 7;
+let _schemaHealed = false;
 // Cloudflare Workers' Web Crypto caps PBKDF2 at 100,000 iterations (Node's
 // local crypto allows more, but production enforces this limit).
 const ITERATIONS = 100000;
@@ -57,11 +59,13 @@ async function createSession(db, userId) {
 async function sessionUser(db, req) {
   const token = cookies(req)[COOKIE];
   if (!token) return null;
-  return await db.prepare(
-    `SELECT s.token, s.expires_at, u.id AS user_id, u.email
+  const row = await db.prepare(
+    `SELECT s.token, s.expires_at, u.id AS user_id, u.email, u.active
      FROM sessions s JOIN admin_users u ON u.id = s.admin_user_id
      WHERE s.token = ?1 AND s.expires_at > strftime('%s','now')`
   ).bind(token).first().catch(() => null);
+  if (row && row.active === 0) return null; // account disabled
+  return row;
 }
 async function destroySession(db, req) {
   const token = cookies(req)[COOKIE];
@@ -88,6 +92,20 @@ export async function onRequest(context) {
     const { request, env } = context;
     const db = env.DB;
     if (!db) return fail('Database not configured.', 500);
+
+    // Self-heal older databases (once per Worker instance): ensure admin_users
+    // has the admin-management columns. Production DBs created before this
+    // feature get them added automatically — no manual SQL needed.
+    if (!_schemaHealed) {
+      try {
+        const cols = await db.prepare("PRAGMA table_info(admin_users)").all();
+        const names = (cols.results || []).map((c) => c.name);
+        if (!names.includes('active')) await db.prepare('ALTER TABLE admin_users ADD COLUMN active INTEGER NOT NULL DEFAULT 1').run();
+        if (!names.includes('last_login')) await db.prepare('ALTER TABLE admin_users ADD COLUMN last_login TEXT').run();
+      } catch (e) { /* table created fresh by migration already has the columns */ }
+      _schemaHealed = true;
+    }
+
     const method = request.method.toUpperCase();
     const url = new URL(request.url);
     const path = url.pathname.replace(/^\/api\/dox\/?/, '').replace(/\/+$/, '');
@@ -137,7 +155,7 @@ export async function onRequest(context) {
       const password = String(b.password || '');
       if (!validEmail(email)) return fail('Enter a valid email address.');
       if (password.length < 10) return fail('Password must be at least 10 characters.');
-      await db.prepare('INSERT INTO admin_users (email, password_hash) VALUES (?1,?2) ON CONFLICT(email) DO UPDATE SET password_hash = excluded.password_hash')
+      await db.prepare('INSERT INTO admin_users (email, password_hash, active) VALUES (?1,?2,1) ON CONFLICT(email) DO UPDATE SET password_hash = excluded.password_hash, active = 1')
         .bind(email, await hashPassword(password)).run();
       return ok({ ready: true });
     }
@@ -152,6 +170,8 @@ export async function onRequest(context) {
       const user = await db.prepare('SELECT * FROM admin_users WHERE email = ?1').bind(email).first().catch(() => null);
       const valid = user ? await verifyPassword(password, user.password_hash) : false;
       if (!user || !valid) return fail('Incorrect email or password.', 401);
+      if (user.active === 0) return fail('This admin account is disabled. Ask another admin to enable it.', 403);
+      await db.prepare("UPDATE admin_users SET last_login = datetime('now') WHERE id = ?1").bind(user.id).run().catch(() => {});
       const token = await createSession(db, user.id);
       return ok({ user: { email: user.email } }, { headers: setCookie(token) });
     }
@@ -183,6 +203,72 @@ export async function onRequest(context) {
           db.prepare('SELECT updated_at FROM site_content WHERE id = 1').first()
         ]);
         return ok({ new_messages: neu?.c || 0, total_messages: total?.c || 0, active_products: prod?.c || 0, content_updated_at: upd?.updated_at || null });
+      }
+
+      /* admin users (list / create / edit / enable / delete) */
+      if (path === 'admin/admins' && method === 'GET') {
+        const { results } = await db.prepare('SELECT id, email, active, created_at, last_login FROM admin_users ORDER BY id ASC').all();
+        const countRow = await db.prepare('SELECT COUNT(*) c FROM admin_users WHERE active = 1').first();
+        return ok({ admins: (results || []).map((u) => ({ id: u.id, email: u.email, active: u.active !== 0, created_at: u.created_at, last_login: u.last_login || null, is_self: u.id === admin.user_id })), active_count: countRow?.c || 0 });
+      }
+      if (path === 'admin/admins' && method === 'POST') {
+        const b = await body();
+        const email = String(b.email || '').trim().toLowerCase();
+        const password = String(b.password || '');
+        if (!validEmail(email)) return fail('Enter a valid email address.');
+        if (password.length < 10) return fail('Password must be at least 10 characters.');
+        const existing = await db.prepare('SELECT id FROM admin_users WHERE email = ?1').bind(email).first();
+        if (existing) return fail('An admin with that email already exists. Edit them instead.', 409);
+        const info = await db.prepare('INSERT INTO admin_users (email, password_hash, active) VALUES (?1,?2,?3)')
+          .bind(email, await hashPassword(password), b.active === false ? 0 : 1).run();
+        const row = await db.prepare('SELECT id, email, active, created_at FROM admin_users WHERE id = ?1').bind(info.meta.last_row_id).first();
+        return ok({ admin: { id: row.id, email: row.email, active: row.active !== 0, created_at: row.created_at } });
+      }
+      if (path === 'admin/admins' && method === 'PUT') {
+        const b = await body();
+        const id = parseInt(b.id, 10);
+        if (!id) return fail('Missing admin id.');
+        const target = await db.prepare('SELECT * FROM admin_users WHERE id = ?1').bind(id).first();
+        if (!target) return fail('Admin not found.', 404);
+        const isSelf = id === admin.user_id;
+
+        // Email change
+        if (b.email !== undefined) {
+          const email = String(b.email).trim().toLowerCase();
+          if (!validEmail(email)) return fail('Enter a valid email address.');
+          const clash = await db.prepare('SELECT id FROM admin_users WHERE email = ?1 AND id != ?2').bind(email, id).first();
+          if (clash) return fail('That email is already used by another admin.', 409);
+          await db.prepare('UPDATE admin_users SET email = ?1 WHERE id = ?2').bind(email, id).run();
+        }
+        // Password change (optional)
+        if (b.password) {
+          if (String(b.password).length < 10) return fail('Password must be at least 10 characters.');
+          await db.prepare('UPDATE admin_users SET password_hash = ?1 WHERE id = ?2').bind(await hashPassword(String(b.password)), id).run();
+        }
+        // Enable / disable
+        if (b.active !== undefined) {
+          if (isSelf && b.active === false) return fail('You cannot disable your own account.', 400);
+          const active = b.active ? 1 : 0;
+          if (active === 0) {
+            const activeCount = await db.prepare('SELECT COUNT(*) c FROM admin_users WHERE active = 1').first();
+            if ((activeCount?.c || 0) <= 1) return fail('You cannot disable the last active admin.', 400);
+          }
+          await db.prepare('UPDATE admin_users SET active = ?1 WHERE id = ?2').bind(active, id).run();
+          if (active === 0) await db.prepare('DELETE FROM sessions WHERE admin_user_id = ?1').bind(id).run(); // sign them out
+        }
+        const row = await db.prepare('SELECT id, email, active, created_at FROM admin_users WHERE id = ?1').bind(id).first();
+        return ok({ admin: { id: row.id, email: row.email, active: row.active !== 0, created_at: row.created_at } });
+      }
+      if (path === 'admin/admins' && method === 'DELETE') {
+        const id = parseInt(url.searchParams.get('id'), 10);
+        if (!id) return fail('Missing admin id.');
+        if (id === admin.user_id) return fail('You cannot delete your own account while signed in.', 400);
+        const target = await db.prepare('SELECT id FROM admin_users WHERE id = ?1').bind(id).first();
+        if (!target) return fail('Admin not found.', 404);
+        const countRow = await db.prepare('SELECT COUNT(*) c FROM admin_users').first();
+        if ((countRow?.c || 0) <= 1) return fail('You cannot delete the last admin account.', 400);
+        await db.prepare('DELETE FROM admin_users WHERE id = ?1').bind(id).run(); // cascades to sessions
+        return ok({ deleted: true });
       }
 
       /* content */
