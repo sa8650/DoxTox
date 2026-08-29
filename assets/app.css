@@ -476,3 +476,69 @@ footer { padding: 40px 0 28px; position: relative; z-index: 1; border-top: 1px s
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+/* ==========================================================================
+   Anti-flash: hide dynamic regions until JS renders the saved content,
+   so visitors never see the old hardcoded placeholder text first.
+   The `content-loading` class is set immediately by an inline <script> in
+   <head> (before first paint) and removed once content has rendered.
+   ========================================================================== */
+body.landing.content-loading [data-brand-name],
+body.landing.content-loading [data-brand-icon],
+body.landing.content-loading [data-nav],
+body.landing.content-loading [data-hero-label],
+body.landing.content-loading [data-hero-title1],
+body.landing.content-loading [data-hero-title2],
+body.landing.content-loading [data-hero-subtitle],
+body.landing.content-loading [data-hero-primary-label],
+body.landing.content-loading [data-hero-secondary-label],
+body.landing.content-loading [data-hero-primary-icon],
+body.landing.content-loading [data-hero-secondary-icon],
+body.landing.content-loading [data-products-label],
+body.landing.content-loading [data-products-title],
+body.landing.content-loading [data-products-subtitle],
+body.landing.content-loading [data-features-label],
+body.landing.content-loading [data-features-title],
+body.landing.content-loading [data-about-label],
+body.landing.content-loading [data-about-title1],
+body.landing.content-loading [data-about-title2],
+body.landing.content-loading [data-about-paragraphs],
+body.landing.content-loading [data-about-checks],
+body.landing.content-loading [data-about-cta-label],
+body.landing.content-loading [data-about-cta-icon],
+body.landing.content-loading [data-contact-label],
+body.landing.content-loading [data-contact-title],
+body.landing.content-loading [data-contact-info-title],
+body.landing.content-loading [data-contact-info-text],
+body.landing.content-loading [data-contact-email],
+body.landing.content-loading [data-contact-phone],
+body.landing.content-loading [data-contact-address],
+body.landing.content-loading [data-footer-brand],
+body.landing.content-loading [data-footer-tagline],
+body.landing.content-loading [data-year],
+body.landing.content-loading [data-stats],
+body.landing.content-loading [data-code-block],
+body.landing.content-loading [data-products-grid],
+body.landing.content-loading [data-features-grid],
+body.landing.content-loading [data-social-links],
+body.landing.content-loading [data-footer-links] {
+  visibility: hidden;
+}
+/* Floating badges are duplicated; hide the whole visual's badges until render */
+body.landing.content-loading .hero-visual .floating-badge { visibility: hidden; }
+
+/* Fade content in once ready */
+body.landing [data-brand-name],
+body.landing [data-stats],
+body.landing [data-code-block],
+body.landing [data-products-grid],
+body.landing [data-features-grid],
+body.landing [data-social-links],
+body.landing [data-footer-links],
+body.landing .floating-badge { transition: opacity .35s ease; }
+
+/* Admin-management rows */
+.admin-row.disabled { opacity: .7; }
+.admin-row .msg-actions button:disabled,
+.product-admin button:disabled,
+.btn:disabled { opacity: .55; cursor: not-allowed; }
