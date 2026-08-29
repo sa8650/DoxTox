@@ -106,11 +106,14 @@
           <div class="card">
             <h2><i class="fas fa-rocket"></i> Quick start</h2>
             <ul style="padding-left:20px;color:var(--text-secondary);font-size:.92rem;line-height:2">
+              <li>New here? Click <strong>Load demo content</strong> to fill every section with sample data you can edit and replace.</li>
               <li>Use the sidebar to edit any section of the landing page.</li>
               <li>Click <strong>Save changes</strong> — the public site updates instantly.</li>
               <li><strong>Messages</strong> holds contact-form submissions.</li>
-              <li><strong>Products</strong> manages Zudo AI, EMS, InfluencerOS — add, edit, reorder, hide.</li>
+              <li><strong>Products</strong> and <strong>Admins</strong> manage your product cards and dashboard users.</li>
             </ul>
+            <button type="button" class="btn btn-primary" id="demoBtn" style="margin-top:10px"><i class="fas fa-wand-magic-sparkles"></i> Load demo content</button>
+            <p class="hint" style="margin-top:8px">Fills all editor fields and adds sample products. Nothing is overwritten without confirmation; review each tab and <strong>Save changes</strong>.</p>
           </div>
         </section>
 
@@ -151,7 +154,10 @@
         <section class="tab-pane" id="tab-products">
           <div class="page-head">
             <div><h1>Products</h1><p>Cards shown in the Products section.</p></div>
-            <button class="btn btn-primary" id="addProductBtn"><i class="fas fa-plus"></i> New product</button>
+            <div style="display:flex;gap:10px">
+              <button class="btn btn-ghost" id="demoProductsBtn" title="Add the sample products (Zudo AI, EMS, InfluencerOS)"><i class="fas fa-wand-magic-sparkles"></i> Demo products</button>
+              <button class="btn btn-primary" id="addProductBtn"><i class="fas fa-plus"></i> New product</button>
+            </div>
           </div>
           <div id="productList"></div>
         </section>
@@ -327,5 +333,5 @@
     <div class="toast-area" id="toastArea"></div>
 
     <script src="assets/app.js"></script>
-  <script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a32af7fe29800de6',t:'MTc4ODAwMDM1Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+  </body>
 </html>
