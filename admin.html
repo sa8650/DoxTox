@@ -81,6 +81,7 @@
           <button data-tab="contact"><i class="fas fa-envelope"></i> Contact &amp; Socials</button>
           <button data-tab="footer"><i class="fas fa-shoe-prints"></i> Footer</button>
           <button data-tab="messages"><i class="fas fa-inbox"></i> Messages <span class="badge-count hidden" id="msgBadge">0</span></button>
+          <button data-tab="admins"><i class="fas fa-user-shield"></i> Admins</button>
           <button data-tab="account"><i class="fas fa-key"></i> Account</button>
         </nav>
         <div class="sidebar-footer">
@@ -282,6 +283,30 @@
           <div class="msg-list" id="msgList"></div>
         </section>
 
+        <!-- ADMINS -->
+        <section class="tab-pane" id="tab-admins">
+          <div class="page-head">
+            <div><h1>Admins</h1><p>People who can sign in to this dashboard.</p></div>
+            <button class="btn btn-primary" id="addAdminBtn"><i class="fas fa-user-plus"></i> New admin</button>
+          </div>
+          <div class="card" id="adminAddCard" style="max-width:640px;display:none">
+            <h2><i class="fas fa-user-plus"></i> Add a new admin</h2>
+            <form id="formAddAdmin">
+              <div class="form-grid">
+                <div class="field"><label for="newAdminEmail">Email</label><input type="email" id="newAdminEmail" required placeholder="colleague@company.com" autocomplete="off" /></div>
+                <div class="field"><label for="newAdminPassword">Temporary password</label><input type="password" id="newAdminPassword" required minlength="10" placeholder="At least 10 characters" autocomplete="new-password" /></div>
+                <label class="checkbox-row full"><input type="checkbox" id="newAdminActive" checked /> Active (can sign in immediately)</label>
+              </div>
+              <div style="display:flex;gap:10px">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Create admin</button>
+                <button type="button" class="btn btn-ghost" id="cancelAddAdmin">Cancel</button>
+              </div>
+              <p class="form-status" id="addAdminStatus" role="status" aria-live="polite" style="margin-top:12px"></p>
+            </form>
+          </div>
+          <div id="adminList" style="margin-top:18px"></div>
+        </section>
+
         <!-- ACCOUNT -->
         <section class="tab-pane" id="tab-account">
           <div class="page-head"><div><h1>Account</h1><p>Change your admin password.</p></div></div>
@@ -302,5 +327,5 @@
     <div class="toast-area" id="toastArea"></div>
 
     <script src="assets/app.js"></script>
-  </body>
+  <script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a32af7fe29800de6',t:'MTc4ODAwMDM1Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
