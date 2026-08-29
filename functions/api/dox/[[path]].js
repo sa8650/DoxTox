@@ -19,7 +19,9 @@
    ========================================================================== */
 const COOKIE = 'doxtox_session';
 const SESSION_DAYS = 7;
-const ITERATIONS = 210000;
+// Cloudflare Workers' Web Crypto caps PBKDF2 at 100,000 iterations (Node's
+// local crypto allows more, but production enforces this limit).
+const ITERATIONS = 100000;
 
 const json = (data, status = 200, init = {}) =>
   new Response(JSON.stringify(data), { status, ...init, headers: { 'content-type': 'application/json', 'cache-control': 'no-store', ...(init.headers || {}) } });
@@ -282,4 +284,3 @@ function normalizeProduct(b) {
     sort_order: Number.isFinite(+b.sort_order) ? +b.sort_order : 0
   };
 }
-
