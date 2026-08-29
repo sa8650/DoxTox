@@ -176,9 +176,15 @@
     let content = window.DOXTOX_DEFAULT_CONTENT;
     let products = window.DOXTOX_DEFAULT_PRODUCTS.slice();
 
+    function releaseLoading() {
+      if (typeof window.__doxRelease === 'function') window.__doxRelease();
+      document.body.classList.remove('content-loading');
+    }
+
     function renderProducts() {
       const grid = $('[data-products-grid]');
       if (!grid) return;
+      grid.innerHTML = ''; // replace, never append over old cards
       products.filter(Boolean).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)).forEach((p) => {
         if (p.active === false) return;
         const tags = (p.tags || []).map((t) => '<span>' + esc(t) + '</span>').join('');
@@ -199,6 +205,7 @@
     function renderFeatures() {
       const grid = $('[data-features-grid]');
       if (!grid || !content.features) return;
+      grid.innerHTML = ''; // replace, never append over old items
       content.features.forEach((f) => {
         const item = document.createElement('div');
         item.className = 'feature-item';
@@ -240,9 +247,20 @@
       if (!wrap || !content.footer || !content.footer.links) return;
       wrap.innerHTML = content.footer.links.map((l) => '<li><a href="' + esc(l.url || '#') + '">' + esc(l.label) + '</a></li>').join('');
     }
+    function renderBrand() {
+      const name = (content.brand && content.brand.name) || 'DoxTox';
+      // Browser tab + social/SEO tags use the editable brand name everywhere.
+      document.title = name + ' Technologies Ltd.';
+      const og = document.querySelector('meta[property="og:site_name"]');
+      if (og) og.setAttribute('content', name + ' Technologies Ltd.');
+      const ogTitle = document.querySelector('meta[property="og:title"]');
+      if (ogTitle && content.hero) ogTitle.setAttribute('content', name + ' — ' + (content.hero.title_1 || '') + ' ' + (content.hero.title_2_highlight || ''));
+    }
     function renderContent() {
       const c = content;
+      renderBrand();
       setText($('[data-brand-name]'), c.brand && c.brand.name);
+      setText($('[data-footer-brand]'), c.brand && c.brand.name);
       const bi = $('[data-brand-icon]'); if (bi && c.brand && c.brand.logo_icon) bi.className = c.brand.logo_icon;
       setText($('[data-nav="products"]'), c.nav && c.nav.products);
       setText($('[data-nav="features"]'), c.nav && c.nav.features);
@@ -277,11 +295,11 @@
       if (emailEl && ct.email) { emailEl.textContent = ct.email; emailEl.href = 'mailto:' + ct.email; }
       setText($('[data-contact-phone]'), ct.phone);
       setText($('[data-contact-address]'), ct.address);
-      setText($('[data-footer-brand]'), c.brand && c.brand.name);
       setText($('[data-footer-tagline]'), c.footer && c.footer.tagline);
       setText($('[data-year]'), String(new Date().getFullYear()));
       renderStats(); renderBadges(); renderCodeBlock(); renderFeatures();
       renderSocials(); renderFooterLinks(); renderProducts();
+      releaseLoading(); // reveal everything only after saved content is in place
     }
     async function load() {
       try {
@@ -449,7 +467,7 @@
       const tags = Array.isArray(p.tags) ? p.tags.join(', ') : '';
       return '<div class="form-grid">' +
         '<div class="field"><label>Title</label><input class="p-title-inp" type="text" value="' + esc(p.title) + '" /></div>' +
-        '<div class="field"><label>Icon (Font Awesome class)</label><input class="p-icon" type="text" value="' + esc(p.icon || 'fas fa-cube') + '" /></div>' +
+        '<div class="field"><label>Icon (Font Awesome class)</label><input class="p-icon-inp" type="text" value="' + esc(p.icon || 'fas fa-cube') + '" /></div>' +
         '<div class="field full"><label>Description</label><textarea class="p-desc">' + esc(p.description || '') + '</textarea></div>' +
         '<div class="field"><label>Tags (comma separated)</label><input class="p-tags" type="text" value="' + esc(tags) + '" /></div>' +
         '<div class="field"><label>Sort order (lower = first)</label><input class="p-sort" type="number" value="' + esc(p.sort_order != null ? p.sort_order : 0) + '" /></div>' +
@@ -480,7 +498,7 @@
     function readProductForm(det) {
       return {
         title: $('.p-title-inp', det).value.trim() || 'Untitled product',
-        icon: $('.p-icon', det).value.trim() || 'fas fa-cube',
+        icon: $('.p-icon-inp', det).value.trim() || 'fas fa-cube',
         description: $('.p-desc', det).value.trim(),
         tags: $('.p-tags', det).value.split(',').map((t) => t.trim()).filter(Boolean),
         sort_order: parseInt($('.p-sort', det).value, 10) || 0,
@@ -492,11 +510,14 @@
       };
     }
     async function saveProduct(id, det) {
-      const data = readProductForm(det); const btn = $('.p-save', det);
+      const btn = $('.p-save', det);
+      let data;
+      try { data = readProductForm(det); }
+      catch (e) { toast('Could not read the product form: ' + e.message, 'err'); return; }
       btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
       try {
         await window.doxtox.api.put('/admin/products', Object.assign({ id }, data));
-        toast('“' + data.title + '” updated.'); await loadProducts(); renderProducts(); refreshOverview();
+        toast('“' + data.title + '” saved.'); await loadProducts(); renderProducts(); refreshOverview();
       } catch (e) { toast('Update failed: ' + e.message, 'err'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> Save product'; }
     }
     async function createProduct() {
@@ -571,6 +592,94 @@
       } catch (e) { toast('Delete failed: ' + e.message, 'err'); }
     }
 
+    /* ---------- admin users ---------- */
+    let admins = [];
+    async function loadAdmins() {
+      const res = await window.doxtox.api.get('/admin/admins');
+      admins = res.admins || []; renderAdmins();
+    }
+    function renderAdmins() {
+      const wrap = $('#adminList'); if (!wrap) return;
+      wrap.innerHTML = '';
+      admins.forEach((u) => {
+        const card = document.createElement('div');
+        card.className = 'msg-card admin-row' + (u.active ? '' : ' disabled');
+        card.innerHTML =
+          '<div class="msg-head"><div class="who">' + esc(u.email) +
+          (u.is_self ? ' <span class="pill featured">You</span>' : '') +
+          (u.active ? '' : ' <span class="pill inactive">Disabled</span>') + '</div>' +
+          '<div class="when">Created ' + esc(timeAgo(u.created_at)) + (u.last_login ? ' · Last login ' + esc(timeAgo(u.last_login)) : '') + '</div></div>';
+        const actions = document.createElement('div');
+        actions.className = 'msg-actions';
+        // Edit / reset password
+        const resetBtn = document.createElement('button');
+        resetBtn.className = 'btn btn-sm btn-ghost';
+        resetBtn.innerHTML = '<i class="fas fa-key"></i> Reset password';
+        resetBtn.addEventListener('click', () => resetAdminPassword(u));
+        // Enable / disable
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'btn btn-sm ' + (u.active ? 'btn-ghost' : 'btn-primary');
+        if (!u.is_self && u.active) toggleBtn.innerHTML = '<i class="fas fa-ban"></i> Disable';
+        else if (u.is_self) { toggleBtn.innerHTML = '<i class="fas fa-ban"></i> Disable'; toggleBtn.disabled = true; toggleBtn.title = 'You cannot disable your own account'; }
+        else toggleBtn.innerHTML = '<i class="fas fa-circle-check"></i> Enable';
+        toggleBtn.addEventListener('click', () => toggleAdmin(u, !u.active));
+        // Delete
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn btn-sm btn-danger';
+        delBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
+        if (u.is_self) { delBtn.disabled = true; delBtn.title = 'You cannot delete yourself'; }
+        else delBtn.addEventListener('click', () => deleteAdmin(u));
+        actions.appendChild(resetBtn); actions.appendChild(toggleBtn); actions.appendChild(delBtn);
+        card.appendChild(actions);
+        wrap.appendChild(card);
+      });
+    }
+    async function toggleAdmin(u, active) {
+      const verb = active ? 'enable' : 'disable';
+      if (!active && !confirm('Disable “' + u.email + '”? They will be signed out immediately and unable to log in until re-enabled.')) return;
+      try {
+        await window.doxtox.api.put('/admin/admins', { id: u.id, active });
+        toast(active ? '“' + u.email + '” enabled.' : '“' + u.email + '” disabled.');
+        await loadAdmins();
+      } catch (e) { toast('Could not ' + verb + ': ' + e.message, 'err'); }
+    }
+    async function deleteAdmin(u) {
+      if (!confirm('Delete admin “' + u.email + '” permanently? Their password and sessions will be removed.')) return;
+      try {
+        await window.doxtox.api.del('/admin/admins?id=' + encodeURIComponent(u.id));
+        toast('“' + u.email + '” deleted.'); await loadAdmins();
+      } catch (e) { toast('Delete failed: ' + e.message, 'err'); }
+    }
+    function resetAdminPassword(u) {
+      const pw = prompt('Enter a new password for ' + u.email + ' (at least 10 characters):');
+      if (pw === null) return;
+      if (pw.length < 10) { toast('Password must be at least 10 characters.', 'err'); return; }
+      window.doxtox.api.put('/admin/admins', { id: u.id, password: pw })
+        .then(() => toast('Password for “' + u.email + '” updated.'))
+        .catch((e) => toast('Could not update password: ' + e.message, 'err'));
+    }
+    function initAdmins() {
+      $('#addAdminBtn').addEventListener('click', () => {
+        const card = $('#adminAddCard'); card.style.display = card.style.display === 'none' ? '' : 'none';
+        if (card.style.display !== 'none') $('#newAdminEmail').focus();
+      });
+      $('#cancelAddAdmin').addEventListener('click', () => { $('#adminAddCard').style.display = 'none'; document.getElementById('formAddAdmin').reset(); });
+      $('#formAddAdmin').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const status = $('#addAdminStatus'), btn = e.target.querySelector('button[type="submit"]');
+        status.className = 'form-status'; status.textContent = '';
+        const email = $('#newAdminEmail').value.trim(), password = $('#newAdminPassword').value, active = $('#newAdminActive').checked;
+        if (password.length < 10) { status.className = 'form-status err'; status.textContent = 'Password must be at least 10 characters.'; return; }
+        btn.disabled = true;
+        try {
+          await window.doxtox.api.post('/admin/admins', { email, password, active });
+          status.className = 'form-status ok'; status.textContent = 'Admin “' + email + '” created.';
+          e.target.reset(); $('#adminAddCard').style.display = 'none'; await loadAdmins();
+        } catch (err) { status.className = 'form-status err'; status.textContent = err.message; }
+        finally { btn.disabled = false; }
+      });
+    }
+
     /* ---------- overview / tabs ---------- */
     async function refreshOverview() {
       try {
@@ -588,6 +697,7 @@
         $$('#sideNav button').forEach((b) => b.classList.toggle('active', b === btn));
         $$('.tab-pane').forEach((p) => p.classList.toggle('active', p.id === 'tab-' + tab));
         if (tab === 'messages') loadMessages().catch((e) => toast('Could not load messages: ' + e.message, 'err'));
+        if (tab === 'admins') loadAdmins().catch((e) => toast('Could not load admins: ' + e.message, 'err'));
         if (tab === 'overview') refreshOverview();
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }));
@@ -637,6 +747,7 @@
       $('#msgFilter').addEventListener('change', () => loadMessages().catch((e) => toast(e.message, 'err')));
       $('#msgReload').addEventListener('click', () => loadMessages().catch((e) => toast(e.message, 'err')));
       $('#overviewReload').addEventListener('click', refreshOverview);
+      initAdmins();
       initPasswordForm(); initTabs(); refreshOverview();
     }
 
@@ -712,4 +823,3 @@
     if (document.body.classList.contains('admin')) Admin.init();
   });
 })();
-
