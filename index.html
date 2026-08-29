@@ -18,6 +18,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="stylesheet" href="assets/app.css" />
+    <!-- Hide dynamic content before first paint until saved content renders
+         (prevents the old hardcoded text from flashing). If JS is off the class
+         is never added, so the static content remains visible; a 4s failsafe
+         also releases it if the API is unreachable. -->
+    <script>
+      (function () {
+        var release = function () { document.body && document.body.classList.remove('content-loading'); };
+        window.__doxRelease = release;
+        document.addEventListener('DOMContentLoaded', function () { document.body.classList.add('content-loading'); });
+        setTimeout(release, 4000);
+      })();
+    </script>
   </head>
   <body class="landing">
     <!-- ===== HEADER ===== -->
@@ -158,7 +170,7 @@
             <p data-contact-info-text>Whether you have a project in mind or just want to explore possibilities — we'd love to hear from you.</p>
             <div class="contact-item">
               <i class="fas fa-envelope"></i>
-              <span><a href="mailto:hello@doxtox.example" data-contact-email>hello@doxtox.example</a></span>
+              <span><a href="/cdn-cgi/l/email-protection#f199949d9d9eb1959e89859e89df9489909c819d94" data-contact-email><span class="__cf_email__" data-cfemail="83ebe6efefecc3e7ecfbf7ecfbade6fbe2eef3efe6">[email&#160;protected]</span></a></span>
             </div>
             <div class="contact-item"><i class="fas fa-phone-alt"></i><span data-contact-phone>+1 (800) 555‑0000</span></div>
             <div class="contact-item"><i class="fas fa-map-marker-alt"></i><span data-contact-address>Your city, Country</span></div>
@@ -198,6 +210,6 @@
       </div>
     </footer>
 
-    <script src="assets/app.js"></script>
-  </body>
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="assets/app.js"></script>
+  <script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a32af780cfb30de6',t:'MTc4ODAwMDMzMg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
